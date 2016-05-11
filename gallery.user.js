@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        4chan.org gallery mode
 // @description Turns thread into image gallery
-// @version     1.0
+// @version     1.1
 // @author      moh <moh@yutsuku.net>
 // @include     https://boards.4chan.org/*/thread/*
 // @include     http://boards.4chan.org/*/thread/*
@@ -34,6 +34,7 @@ Zepto(function($) {
 			"Next": [34, 39, 40, 68, 83], // page down, right arrow, down arrow, d, s
 			"Close": [27] // escape
 		},
+		supportedFormats: ["jpg", "jpeg", "png", "gif"],
 		items: {
 			links: [],
 		},
@@ -119,13 +120,12 @@ Zepto(function($) {
 			var template_data = "";
 			var rowColor = 0;
 			var format;
-			var supportedFormats = ["jpg", "jpeg", "png", "gif"];
 			
 			$(files).each(function(index) {
 				
 				// check if we support this file format
 				format = this.href.split(".").pop();
-				if ( supportedFormats.indexOf(format) == -1 ) {
+				if ( Gallery.supportedFormats.indexOf(format) == -1 ) {
 					return;
 				}
 				
@@ -155,10 +155,7 @@ Zepto(function($) {
 			Gallery["maxHeight"] 	= Math.max(Gallery["wrapper"].clientHeight, Gallery["wrapper"].scrollHeight, Gallery["wrapper"].offsetHeight);
 		},
 		// opens gallery at given image
-		Open: function(startElement) {
-			console.log("Open requested at");
-			console.log(startElement);
-			
+		Open: function(startElement) {			
 			var page = Gallery.items.links.indexOf(startElement.href);
 			if ( page == -1 ) {
 				return;
@@ -191,7 +188,6 @@ Zepto(function($) {
 			}
 		},
 		Close: function(reason) {
-			console.log("Close requested: " + reason);
 			this.isShown = false;
 			$(document.body).toggleClass("gallery-no-overflow");
 			$("#gallery").toggleClass("hidden");
@@ -214,7 +210,15 @@ Zepto(function($) {
 	};
 	
 	// disable native extension (copied hook onto Gallery.ImageExpansion_hook)
-	ImageExpansion.expand = function(){};
+	ImageExpansion.expand = function(e) {
+		// check if we support this file format, if not pass to native extension
+		var format = e.parentNode.href.split(".").pop();
+		if ( Gallery.supportedFormats.indexOf(format) == -1 ) {
+			return Gallery.ImageExpansion_hook(e);
+		} else {
+			return;
+		}
+	};
 	
 	Gallery.InjectCSS();
 	Gallery.InjectHTML();
