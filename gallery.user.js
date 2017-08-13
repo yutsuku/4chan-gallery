@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        4chan.org gallery mode
 // @description Turns thread into image gallery
-// @version     1.1
+// @version     1.2
 // @author      moh <moh@yutsuku.net>
 // @include     https://boards.4chan.org/*/thread/*
 // @include     http://boards.4chan.org/*/thread/*
@@ -37,6 +37,7 @@ Zepto(function($) {
 		supportedFormats: ["jpg", "jpeg", "png", "gif"],
 		items: {
 			links: [],
+			anchors: [],
 		},
 		InjectCSS: function() {
 			var css = '#gallery.fullscreen{position:fixed;top:0;right:0;bottom:0;left:0;overflow:auto}#gallery .flex{display:flex;flex-direction:column;justify-content:center;align-items:center;align-content:center}#gallery .item{flex:1;align-self:stretch}#gallery .item img{position:absolute;max-width:100%;max-height:100%;margin:auto;top:0;right:0;bottom:0;left:0}#gallery .purple{background:#7b6a99}#gallery .blue{background:#6a7e99}#gallery .green{background:#6a9973}#gallery a{text-decoration:none;color:inherit}#gallery .carousel,#gallery .item,#gallery .active,#gallery .carousel-inner{height:100%}#gallery .carousel{position:relative}#gallery .carousel-inner{overflow:hidden;position:relative;width:100%}#gallery .menu{position:fixed;top:10px;right:26px;z-index:10}#gallery .menu .contanyan{text-align:right}#gallery .page-counter{background:#1D1D1D;color:#DADADA;padding:5px 10px;border-radius:5px;display:inline-block}#gallery .close{background:#BB5F5F;color:#DADADA;padding:5px 10px;border-radius:5px;display:inline-block;cursor:pointer}#gallery .close:hover{color:#EDEDED}#gallery.hidden{display:none}.gallery-no-overflow{overflow:hidden}';
@@ -116,10 +117,11 @@ Zepto(function($) {
 		},
 		InjectData: function() {
 			var files = $(".file a.fileThumb");
-			var template = '<div class="carousel-inner flex"><div class="item flex %row%"><img src="%image%" alt="" /></div></div>';
+			var template = '<div class="carousel-inner flex" data-anchor="%anchor%"><div class="item flex %row%"><img src="%image%" alt="" /></div></div>';
 			var template_data = "";
 			var rowColor = 0;
 			var format;
+			var anchor;
 			
 			$(files).each(function(index) {
 				
@@ -129,15 +131,18 @@ Zepto(function($) {
 					return;
 				}
 				
+				anchor = this.parentNode.parentNode.id;
+				
 				// prepare link table that will provide gallery index to jump into
 				Gallery.items.links.push(this.href);
+				Gallery.items.anchors.push(anchor);
 				
 				rowColor = index % 3;
 				if ( rowColor == 0 ) rowColor = "purple";
 				if ( rowColor == 1 ) rowColor = "blue";
 				if ( rowColor == 2 ) rowColor = "green";
 				
-				template_data += template.replace("%row%", rowColor).replace("%image%", this.href);
+				template_data += template.replace("%row%", rowColor).replace("%image%", this.href).replace("%anchor%", anchor);
 				
 				// hook our own function to handle image clicks
 				$(this).on("click", function(event) {
@@ -178,6 +183,8 @@ Zepto(function($) {
 				this["currentPage"] -= 1;
 				this["wrapper"].scrollTop = this["currentPage"] * this["itemHeight"] - this["itemHeight"];
 				$(this["currentPages"])[0].innerHTML = this["currentPage"];
+				
+				document.getElementById(Gallery.items.anchors[this["currentPage"]-1]).scrollIntoView(true);
 			}
 		},
 		Next: function() {
@@ -185,6 +192,8 @@ Zepto(function($) {
 				this["currentPage"] += 1;
 				this["wrapper"].scrollTop = this["currentPage"] * this["itemHeight"] - this["itemHeight"];
 				$(this["currentPages"])[0].innerHTML = this["currentPage"];
+				
+				document.getElementById(Gallery.items.anchors[this["currentPage"]-1]).scrollIntoView(true);
 			}
 		},
 		Close: function(reason) {
